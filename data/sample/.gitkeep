@@ -1,0 +1,5 @@
+# Placeholders for tracked empty directories
+
+This file exists so Git can track `data/sample/` before sample documents are added.
+
+Phase 2+ may replace this with small campus FAQ / handbook excerpts suitable for RAG demos.

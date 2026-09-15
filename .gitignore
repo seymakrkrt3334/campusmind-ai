@@ -1,28 +1,97 @@
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+*.egg
 
-# Virtual environment
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Environment variables
+# Environment variables and secrets
 .env
+.env.local
+.env.*.local
+!.env.example
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Generated models
+# Node / NestJS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+android/app/build/
+ios/build/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+
+# Generated / binary ML models
 models/*.pkl
 models/*.joblib
+models/*.onnx
+models/*.pt
+models/*.pth
+models/*.h5
 
-# Raw datasets
+# Raw / private datasets
 data/raw/
+data/private/
+
+# Logs and temp
+logs/
+*.log
+tmp/
+temp/
+.cache/
+
+# Test / type coverage
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Docker overrides (local)
+docker-compose.override.yml
