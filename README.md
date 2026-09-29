@@ -4,7 +4,7 @@ CampusMind AI is a campus assistant that answers university-related questions us
 
 ## Current status
 
-**Phase 0 (foundation) is in progress.** The repository documents the product, architecture, environment contract, and target folder layout. Application scaffolding (NestJS, Expo, FastAPI) starts in Phase 1 and has not been started yet.
+**Phase 1A (PostgreSQL + Docker Compose) is in progress.** Phase 0 documentation and layout are done. Local Postgres is defined in `docker-compose.yml`. NestJS, Prisma, FastAPI, and Expo scaffolding are **not** started yet.
 
 ## v1 scope
 
@@ -49,18 +49,39 @@ api/            # Deprecated empty scaffold — see api/README.md
 frontend/       # Deprecated empty scaffold — see frontend/README.md
 ```
 
-## Quick start (Phase 0)
+## Quick start (Phase 1A — PostgreSQL)
 
-There is nothing to run yet. For Phase 1 and beyond:
+**Prerequisite:** Docker Desktop (or Docker Engine + Compose). If Docker is not installed, install it yourself before continuing — this repo does not install Docker for you.
 
-1. Copy `.env.example` to `.env` and fill in local values (never commit `.env`).
-2. Follow service READMEs under `apps/` once they are scaffolded.
-3. Read [docs/architecture.md](docs/architecture.md) and [docs/environment.md](docs/environment.md).
+1. Copy `.env.example` to `.env` (never commit `.env`).
+2. Start Postgres:
+
+```bash
+docker compose up -d
+```
+
+3. Check status and health:
+
+```bash
+docker compose ps
+docker compose exec postgres pg_isready -U campusmind -d campusmind
+```
+
+4. Stop when finished:
+
+```bash
+docker compose stop
+```
+
+Full details: [docs/postgres.md](docs/postgres.md).
+
+Application services (NestJS, FastAPI, Expo) are scaffolded in later Phase 1 steps.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Environment variables](docs/environment.md)
+- [Local PostgreSQL](docs/postgres.md)
 - [ADR 0001 — Stack choices](docs/adr/0001-stack-choices.md)
 
 ## Python / ML assets

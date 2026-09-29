@@ -59,9 +59,10 @@ Shared variable names are defined in [environment.md](environment.md) and `.env.
 
 | Phase | Focus |
 |-------|--------|
-| 0 | Docs, layout, env hygiene (current) |
-| 1 | Scaffolds + health checks + Postgres/Prisma |
-| 2+ | RAG/LLM chat, then Docker, CI/CD, fuller tests and security |
+| 0 | Docs, layout, env hygiene |
+| 1A | Local PostgreSQL via Docker Compose (current infra slice) |
+| 1B+ | NestJS / Prisma / FastAPI / Expo scaffolds + health checks |
+| 2+ | RAG/LLM chat, fuller Docker, CI/CD, tests and security |
 
 ## Related docs
 
