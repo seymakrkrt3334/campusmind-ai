@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,17 +6,8 @@ import {
 import { CourseMembershipRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../common/prisma-errors';
-
-export type CreateCourseInput = {
-  code?: string;
-  title?: string;
-  description?: string;
-};
-
-export type AddCourseMemberInput = {
-  userId?: string;
-  role?: CourseMembershipRole;
-};
+import { AddCourseMemberDto } from './dto/add-course-member.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
 
 const memberUserSelect = {
   id: true,
@@ -30,22 +20,12 @@ const memberUserSelect = {
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateCourseInput) {
-    const code = input.code?.trim();
-    const title = input.title?.trim();
-
-    if (!code) {
-      throw new BadRequestException('code is required');
-    }
-    if (!title) {
-      throw new BadRequestException('title is required');
-    }
-
+  async create(input: CreateCourseDto) {
     try {
       return await this.prisma.course.create({
         data: {
-          code,
-          title,
+          code: input.code,
+          title: input.title,
           description: input.description,
         },
       });
@@ -68,13 +48,8 @@ export class CoursesService {
     return course;
   }
 
-  async addMember(courseId: string, input: AddCourseMemberInput) {
-    if (!input.userId) {
-      throw new BadRequestException('userId is required');
-    }
-    if (!input.role || !isMembershipRole(input.role)) {
-      throw new BadRequestException('role must be STUDENT or INSTRUCTOR');
-    }
+  async addMember(courseId: string, input: AddCourseMemberDto) {
+    const role = input.role ?? CourseMembershipRole.STUDENT;
 
     await this.findOne(courseId);
     await this.assertUserExists(input.userId);
@@ -96,7 +71,7 @@ export class CoursesService {
         data: {
           courseId,
           userId: input.userId,
-          role: input.role,
+          role,
         },
         include: {
           user: { select: memberUserSelect },
@@ -128,10 +103,4 @@ export class CoursesService {
       throw new NotFoundException('User not found');
     }
   }
-}
-
-function isMembershipRole(value: string): value is CourseMembershipRole {
-  return Object.values(CourseMembershipRole).includes(
-    value as CourseMembershipRole,
-  );
 }

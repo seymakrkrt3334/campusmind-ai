@@ -1,16 +1,24 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { CoursesService } from './courses.service';
-import type {
-  AddCourseMemberInput,
-  CreateCourseInput,
-} from './courses.service';
+import { AddCourseMemberDto } from './dto/add-course-member.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UserRole } from '../generated/prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   @Post()
-  create(@Body() body: CreateCourseInput) {
+  create(@Body() body: CreateCourseDto) {
     return this.coursesService.create(body);
   }
 
@@ -20,17 +28,21 @@ export class CoursesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.coursesService.findOne(id);
   }
 
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   @Post(':id/members')
-  addMember(@Param('id') id: string, @Body() body: AddCourseMemberInput) {
+  addMember(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AddCourseMemberDto,
+  ) {
     return this.coursesService.addMember(id, body);
   }
 
   @Get(':id/members')
-  listMembers(@Param('id') id: string) {
+  listMembers(@Param('id', ParseUUIDPipe) id: string) {
     return this.coursesService.listMembers(id);
   }
 }

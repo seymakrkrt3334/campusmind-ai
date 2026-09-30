@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { CoursesModule } from './courses/courses.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ChatsModule } from './chats/chats.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ChatsModule } from './chats/chats.module';
     CoursesModule,
     DocumentsModule,
     ChatsModule,
+    AuthModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

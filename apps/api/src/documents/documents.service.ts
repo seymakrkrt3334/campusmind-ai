@@ -1,20 +1,13 @@
 import {
-  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentStatus } from '../generated/prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { SafeUser } from '../common/safe-user';
 import { mapPrismaError } from '../common/prisma-errors';
-
-export type CreateDocumentInput = {
-  title?: string;
-  originalFilename?: string;
-  mimeType?: string;
-  status?: DocumentStatus;
-  uploadedById?: string;
-  courseId?: string;
-};
+import { UserRole } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
 
 const documentInclude = {
   uploadedBy: {
@@ -29,21 +22,9 @@ const documentInclude = {
 export class DocumentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateDocumentInput) {
-    const title = input.title?.trim();
-    if (!title) {
-      throw new BadRequestException('title is required');
-    }
-    if (!input.uploadedById) {
-      throw new BadRequestException('uploadedById is required');
-    }
-    if (input.status !== undefined && !isDocumentStatus(input.status)) {
-      throw new BadRequestException(
-        'status must be PENDING, PROCESSING, READY, or FAILED',
-      );
-    }
-
-    await this.assertUserExists(input.uploadedById);
+  async create(actor: SafeUser, input: CreateDocumentDto) {
+    const uploadedById = this.resolveUploader(actor, input.uploadedById);
+    await this.assertUserExists(uploadedById);
     if (input.courseId) {
       await this.assertCourseExists(input.courseId);
     }
@@ -51,11 +32,10 @@ export class DocumentsService {
     try {
       return await this.prisma.document.create({
         data: {
-          title,
+          title: input.title,
           originalFilename: input.originalFilename,
           mimeType: input.mimeType,
-          status: input.status,
-          uploadedById: input.uploadedById,
+          uploadedById,
           courseId: input.courseId,
         },
         include: documentInclude,
@@ -112,8 +92,14 @@ export class DocumentsService {
       throw new NotFoundException('Course not found');
     }
   }
-}
 
-function isDocumentStatus(value: string): value is DocumentStatus {
-  return Object.values(DocumentStatus).includes(value as DocumentStatus);
+  private resolveUploader(actor: SafeUser, uploadedById?: string) {
+    if (!uploadedById || uploadedById === actor.id) {
+      return actor.id;
+    }
+    if (actor.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Insufficient role');
+    }
+    return uploadedById;
+  }
 }

@@ -1,22 +1,12 @@
 import {
-  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MessageRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../common/prisma-errors';
-
-export type CreateChatInput = {
-  userId?: string;
-  courseId?: string;
-  title?: string;
-};
-
-export type CreateMessageInput = {
-  role?: MessageRole;
-  content?: string;
-};
+import { CreateChatDto } from './dto/create-chat.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 const sessionInclude = {
   user: {
@@ -31,12 +21,11 @@ const sessionInclude = {
 export class ChatsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateChatInput) {
-    if (!input.userId) {
-      throw new BadRequestException('userId is required');
+  async create(actorId: string, input: CreateChatDto) {
+    if (input.userId && input.userId !== actorId) {
+      throw new ForbiddenException('You cannot create a chat for another user');
     }
 
-    await this.assertUserExists(input.userId);
     if (input.courseId) {
       await this.assertCourseExists(input.courseId);
     }
@@ -44,7 +33,7 @@ export class ChatsService {
     try {
       return await this.prisma.chatSession.create({
         data: {
-          userId: input.userId,
+          userId: actorId,
           courseId: input.courseId,
           title: input.title,
         },
@@ -55,7 +44,7 @@ export class ChatsService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, actorId: string) {
     const session = await this.prisma.chatSession.findUnique({
       where: { id },
       include: sessionInclude,
@@ -63,11 +52,16 @@ export class ChatsService {
     if (!session) {
       throw new NotFoundException('Chat session not found');
     }
+    if (session.userId !== actorId) {
+      throw new ForbiddenException('You do not have access to this chat');
+    }
     return session;
   }
 
-  async findByUser(userId: string) {
-    await this.assertUserExists(userId);
+  async findByUser(userId: string, actorId: string) {
+    if (userId !== actorId) {
+      throw new ForbiddenException('You do not have access to these chats');
+    }
 
     return this.prisma.chatSession.findMany({
       where: { userId },
@@ -76,23 +70,15 @@ export class ChatsService {
     });
   }
 
-  async addMessage(chatId: string, input: CreateMessageInput) {
-    const content = input.content?.trim();
-    if (!input.role || !isMessageRole(input.role)) {
-      throw new BadRequestException('role must be USER, ASSISTANT, or SYSTEM');
-    }
-    if (!content) {
-      throw new BadRequestException('content is required');
-    }
-
-    await this.findOne(chatId);
+  async addMessage(chatId: string, actorId: string, input: CreateMessageDto) {
+    await this.findOne(chatId, actorId);
 
     try {
       return await this.prisma.message.create({
         data: {
           chatSessionId: chatId,
           role: input.role,
-          content,
+          content: input.content,
         },
       });
     } catch (error) {
@@ -100,23 +86,13 @@ export class ChatsService {
     }
   }
 
-  async listMessages(chatId: string) {
-    await this.findOne(chatId);
+  async listMessages(chatId: string, actorId: string) {
+    await this.findOne(chatId, actorId);
 
     return this.prisma.message.findMany({
       where: { chatSessionId: chatId },
       orderBy: { createdAt: 'asc' },
     });
-  }
-
-  private async assertUserExists(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
   }
 
   private async assertCourseExists(courseId: string) {
@@ -128,8 +104,4 @@ export class ChatsService {
       throw new NotFoundException('Course not found');
     }
   }
-}
-
-function isMessageRole(value: string): value is MessageRole {
-  return Object.values(MessageRole).includes(value as MessageRole);
 }
