@@ -4,6 +4,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
+import { UsersModule } from './users/users.module';
+import { CoursesModule } from './courses/courses.module';
+import { DocumentsModule } from './documents/documents.module';
+import { ChatsModule } from './chats/chats.module';
 
 @Module({
   imports: [
@@ -11,6 +15,10 @@ import { HealthController } from './health/health.controller';
       isGlobal: true,
     }),
     PrismaModule,
+    UsersModule,
+    CoursesModule,
+    DocumentsModule,
+    ChatsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
