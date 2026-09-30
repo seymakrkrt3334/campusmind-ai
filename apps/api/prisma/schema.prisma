@@ -1,7 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// CampusMind AI — core relational schema (Phase 1C)
+// Vector / embedding tables are intentionally omitted until a later RAG phase.
 
 generator client {
   provider     = "prisma-client"
@@ -11,4 +9,126 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum CourseMembershipRole {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships       CourseMember[]
+  uploadedDocuments Document[]
+  chatSessions      ChatSession[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  title       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members      CourseMember[]
+  documents    Document[]
+  chatSessions ChatSession[]
+
+  @@index([title])
+  @@map("courses")
+}
+
+model CourseMember {
+  userId    String               @map("user_id") @db.Uuid
+  courseId  String               @map("course_id") @db.Uuid
+  role      CourseMembershipRole
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, courseId])
+  @@index([courseId])
+  @@index([userId, role])
+  @@map("course_members")
+}
+
+model Document {
+  id               String         @id @default(uuid()) @db.Uuid
+  title            String
+  originalFilename String?        @map("original_filename")
+  mimeType         String?        @map("mime_type")
+  status           DocumentStatus @default(PENDING)
+  uploadedById     String         @map("uploaded_by_id") @db.Uuid
+  courseId         String?        @map("course_id") @db.Uuid
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  uploadedBy User    @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  course     Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([uploadedById])
+  @@index([courseId])
+  @@index([status])
+  @@index([courseId, status])
+  @@map("documents")
+}
+
+model ChatSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String?
+  userId    String   @map("user_id") @db.Uuid
+  courseId  String?  @map("course_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([userId, updatedAt])
+  @@index([courseId])
+  @@map("chat_sessions")
+}
+
+model Message {
+  id            String      @id @default(uuid()) @db.Uuid
+  chatSessionId String      @map("chat_session_id") @db.Uuid
+  role          MessageRole
+  content       String
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  chatSession ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  @@index([chatSessionId, createdAt])
+  @@map("messages")
 }
